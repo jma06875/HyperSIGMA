@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .carousel .item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      width: 100%;
+      max-width: 2000px; /* 可以根据需要调整最大宽度 */
+    }
+  
+    .carousel img {
+      width: 100%;
+      height: auto;
+      max-height: 650px; /* 设置一个合理的最大高度 */
+      object-fit: contain;
+      aspect-ratio: 4 / 3; /* 设置图片的宽高比，这里以4:3为例 */
+    }
+  </style>
+
+  <meta charset="utf-8">
+  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+  <!-- Replace the content tag with appropriate information -->
+  <meta name="description" content="DESCRIPTION META TAG">
+  <meta property="og:title" content="SOCIAL MEDIA TITLE TAG"/>
+  <meta property="og:description" content="SOCIAL MEDIA DESCRIPTION TAG TAG"/>
+  <meta property="og:url" content="URL OF THE WEBSITE"/>
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+  <meta property="og:image" content="static/image/your_banner_image.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+
+
+  <meta name="twitter:title" content="TWITTER BANNER TITLE META TAG">
+  <meta name="twitter:description" content="TWITTER BANNER DESCRIPTION META TAG">
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X600-->
+  <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- Keywords for your paper to be indexed by-->
+  <meta name="keywords" content="KEYWORDS SHOULD BE PLACED HERE">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <title>HyperSIGMA: Hyperspectral Intelligence Comprehension Foundation Model</title>
+  <link rel="icon" type="image/x-icon" href="static\images\ICON1.png">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+  rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+</head>
+<body>
+
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">
+              <img src="Fig/logo1.png" alt="Logo" style="width: 80px; height: auto; vertical-align: middle;">
+              HyperSIGMA: <br>Hyperspectral Intelligence Comprehension Foundation Model</h1>
+            <div class="is-size-5 publication-authors">
+              <span class="author-block">
+                <a href="https://dotwang.github.io/" target="_blank">Di Wang</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://meiqihu.github.io/" target="_blank">Meiqi Hu</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.com/citations?hl=en&user=PBqyF80AAAAJ" target="_blank">Yao Jin</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.com/citations?hl=en&user=-ec3mwUAAAAJ" target="_blank">Yuchun Miao</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://jqyang22.github.io/" target="_blank">Jiaqi Yang</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.com/citations?hl=en&user=CxKy4lEAAAAJ" target="_blank">Yichu Xu</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.cz/citations?user=gFKE4TMAAAAJ&hl=zh-CN&oi=sra" target="_blank">Xiaolei Qin</a><sup>1,✢</sup>,
+              </span>
+              <br>
+              <span class="author-block">
+                <a href="https://leonmakise.github.io/" target="_blank">Jiaqi Ma</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://github.com/KiwiLYu" target="_blank">Lingyu Sun</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://ieeexplore.ieee.org/author/37089818143" target="_blank">Chenxing Li</a><sup>1,✢</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://www.researchgate.net/profile/Fu-Chuan" target="_blank">Chuan Fu</a><sup>2</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://chrx97.com/" target="_blank">Hongruixuan Chen</a><sup>3</sup>,
+              </span>   
+              <br>    
+              <span class="author-block">
+                <a href="https://chengxihan.github.io/" target="_blank">Chengxi Han</a><sup>1,📧</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://naotoyokoya.com/" target="_blank">Naoto Yokoya</a><sup>3</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.com/citations?hl=en&user=9jH5v74AAAAJ&hl=en" target="_blank">Jing Zhang</a><sup>1,📧</sup>,
+              </span>       
+              <span class="author-block">
+                <a href="https://openreview.net/profile?id=~Minqiang_Xu1" target="_blank">Minqiang Xu</a><sup>4</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://ieeexplore.ieee.org/author/37090050631" target="_blank">Lin Liu</a><sup>4</sup>,
+              </span>  
+              <br>    
+              <span class="author-block">
+                <a href="https://cs.whu.edu.cn/info/1019/2889.htm" target="_blank">Lefei Zhang</a><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <a href="http://jszy.whu.edu.cn/wuchen/en/index.htm" target="_blank">Chen Wu</a><sup>1,📧</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://cs.whu.edu.cn/info/1019/2892.htm" target="_blank">Bo Du</a><sup>1,📧</sup>,
+              </span>
+              <span class="author-block">
+                <a href="https://scholar.google.com/citations?user=RwlJNLcAAAAJ&hl=en" target="_blank">Dacheng Tao</a><sup>5</sup>,
+              </span>       
+              <span class="author-block">
+                <a href="http://www.lmars.whu.edu.cn/prof_web/zhangliangpei/rs/index.html" target="_blank">Liangpei Zhang</a><sup>1,📧</sup>,
+              </span>
+            </div>
+
+                  <div class="is-size-5 publication-authors">
+                    <img src="static\images\whu1.png" width="25%"/> 
+                    <img src="static\images\cqu1.png" width="25%"/> 
+                    <img src="static\images\utokyo.png" width="25%"/>
+                    <br>
+                    <img src="static\images\NERC-SLIP1.png" width="50%"/> 
+                    <img src="static\images\NTU.jpg" width="20%"/>
+                    <span class="author-block">Wuhan University<sup>1</sup> &nbsp &nbsp &nbsp Chongqing University<sup>2</sup> &nbsp &nbsp &nbsp The University of Tokyo<sup>3</sup><br>National Engineering Research Center of Speech and Language Information Processing<sup>4</sup><br>Nanyang Technological University<sup>5</sup><br><b>IEEE TPAMI'25</b></span>
+                    <span class="eql-cntrb"><small><br><sup>✢</sup>: Equal Contribution</small>, <small><sup>📧</sup>: Corresponding Author</small><br></span>
+                  </div>
+
+                  <div class="column has-text-centered">
+
+                    <div class="publication-links">
+                         <!-- Arxiv PDF link -->
+                      <!-- <span class="link-block">
+                        <a href="https://arxiv.org/pdf/2306.13653" target="_blank"
+                        class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                          <i class="fas fa-file-pdf"></i>
+                        </span>
+                        <span>Paper</span>
+                      </a>
+                    </span> -->
+
+                    <!-- Supplementary PDF link -->
+                    <!-- <span class="link-block">
+                      <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+                      class="external-link button is-normal is-rounded is-dark">
+                      <span class="icon">
+                        <i class="fas fa-file-pdf"></i>
+                      </span>
+                      <span>Supplementary</span>
+                    </a>
+                  </span> -->
+
+                  <!-- Github link -->
+                  <span class="link-block">
+                    <a href="https://github.com/WHU-Sigma/HyperSIGMA" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <span class="link-block">
+                  <a href="https://huggingface.co/datasets/WHU-Sigma/HyperSIGMA_Datasets/tree/main" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-database"></i>
+                  </span>
+                  <span>Dataset</span>
+                </a>
+                </span>
+                
+                <span class="link-block">
+                  <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/tree/main" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fas fa-download"></i>
+                  </span>
+                  <span>Model</span>
+                </a>
+              </span>
+
+                <!-- ArXiv abstract Link -->
+                <span class="link-block">
+                  <a href="https://arxiv.org/abs/2406.11519" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+                </span>
+
+                <span class="link-block">
+                  <a href="https://mp.weixin.qq.com/s/dsUYTbZKfYBGmC4mju0zPg" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="fa-brands fa-weixin"></i>
+                  </span>
+                  <span>Media</span>
+                </a>
+              </span>
+
+                <br>
+                <h4 class="title is-4">TL;NR: The first billion-level foundation model <br> specifically designed for HSI interpretation!</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            The first billion-level foundation model specifically designed for HSI interpretation. To tackle the spectral and spatial redundancy challenges in HSIs, we introduce a novel sparse sampling attention (SSA) mechanism, which effectively promotes the learning of diverse contextual features and serves as the basic block of HyperSIGMA. HyperSIGMA integrates spatial and spectral features using a specially designed spectral enhancement module.
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+<!-- Image carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Introduction</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework of HyperSIGMA</h3>
+          <!-- Your image here -->
+          <img src="Fig\framework.png" alt="MY ALT TEXT" width="50%"/>
+        </div>
+        <div class="item">
+          <h3 class="title is-4">Comparison of Existing Frameworks</h3>
+          <!-- Your image here -->
+          <img src="Fig\different_patterns.png" alt="MY ALT TEXT" width="50%"/>
+        </div>
+
+       <div class="item">
+        <h3 class="title is-4">Superior performance across 20 datasets. <br>Both high-level and low-level hyperspectral tasks, as well as multispectral scenes.</h3>
+        <!-- Your image here -->
+        <img src="Fig\radarimg.png" alt="MY ALT TEXT" width="50%"/>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+
+<!-- Image carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Complexity</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Inference Time</h3>
+          <!-- Your image here -->
+          <img src="Fig\complexity\testing_time.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Memory Footprint</h3>
+        <!-- Your image here -->
+        <img src="Fig\complexity\gpu_memory.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Datasets</h2>
+        <!-- Your image here -->
+        <center><img src="Fig\dataset.png"  alt="MY ALT TEXT" width="800px" /></center>
+        <h2 class="subtitle has-text-lefted">
+          We collected hyperspectral remote sensing samples around the globe, constructing a large-scale hyperspectral dataset -- HyperGlobal-450K. <br> HyperGlobal-450K contains over 20 million three-band images, far exceeding the scale of existing hyperspectral datasets.
+        </h2>
+    </div>
+  </div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Classification</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework</h3>
+          <!-- Your image here -->
+          <img src="Fig\classification\HSIClassificationFlowchart.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Classification Map</h3>
+        <!-- Your image here -->
+        <img src="Fig\classification\HH_ClassificationMap.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Target Detection</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework</h3>
+          <!-- Your image here -->
+          <img src="Fig\detection\htd_framework.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Detection probability maps for HTD tasks</h3>
+        <!-- Your image here -->
+        <img src="Fig\detection\htd_map.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+      <div class="item">
+        <h3 class="title is-4">Detection probability maps for HAD tasks</h3>
+        <!-- Your image here -->
+        <img src="Fig\detection\had_map.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+      <div class="item">
+        <h3 class="title is-4">ROC curves on HTD and HAD tasks</h3>
+        <!-- Your image here -->
+        <img src="Fig/detection/hd_roc.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+      
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Change Detection</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework</h3>
+          <!-- Your image here -->
+          <img src="Fig\changedetection\CD_FlowChart.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Change detection map</h3>
+        <!-- Your image here -->
+        <img src="Fig\changedetection\CDmap_BayArea.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Unmixing</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework</h3>
+          <!-- Your image here -->
+          <img src="Fig\unmixing\Unmix_FlowChart.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Abundance prediction results</h3>
+        <!-- Your image here -->
+        <img src="Fig\unmixing\Unmix_ab_Urban.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+      <div class="item">
+        <h3 class="title is-4">Endmember prediction results</h3>
+        <!-- Your image here -->
+        <img src="Fig\unmixing\Unmix_em_Urban.png" alt="MY ALT TEXT" width="30%"/>
+      </div>  
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- Image carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Denoising & Super-resolution</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item">
+          <h3 class="title is-4">Framework</h3>
+          <!-- Your image here -->
+          <img src="Fig\denoising\lowlevel_framework.png" alt="MY ALT TEXT" width="30%"/>
+        </div>
+       <div class="item">
+        <h3 class="title is-4">Denoising results using different methods in Case 5</h3>
+        <!-- Your image here -->
+        <img src="Fig\denoising\denosing_demonstration.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+      <div class="item">
+        <h3 class="title is-4">Super-resolution results</h3>
+        <!-- Your image here -->
+        <img src="Fig\super-resolution\superresolution_demonstration.png" alt="MY ALT TEXT" width="30%"/>
+      </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+
+<!-- <section class="hero teaser is-small">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <h2 class="title is-3">Pretrained Models</h2>
+      <table style="border-collapse: collapse; width: 150%; font-size: 1.2em;">
+        <thead>
+          <tr style="border-bottom: 2px solid black;">
+            <th style="padding: 10px; text-align: left;">Pretrain</th>
+            <th style="padding: 10px; text-align: left;">Backbone</th>
+            <th style="padding: 10px; text-align: left;">Model Weights</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 10px;">Spatial_MAE</td>
+            <td style="padding: 10px;">ViT-B</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/1kShixCeWhPGde-vLLxQLJg?pwd=vruc" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spat-vit-base-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Spatial_MAE</td>
+            <td style="padding: 10px;">ViT-L</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/11iwHFh8sfg9S-inxOYtJlA?pwd=d2qs" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spat-vit-large-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Spatial_MAE</td>
+            <td style="padding: 10px;">ViT-H</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/1gV9A_XmTCBRw90zjSt90ZQ?pwd=knuu" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spat-vit-huge-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Spectral_MAE</td>
+            <td style="padding: 10px;">ViT-B</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/1VinBf4qnN98aa6z7TZ-ENQ?pwd=mi2y" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spec-vit-base-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Spectral_MAE</td>
+            <td style="padding: 10px;">ViT-L</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/1tF2rG-T_65QA3UaG4K9Lhg?pwd=xvdd" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spec-vit-large-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;">Spectral_MAE</td>
+            <td style="padding: 10px;">ViT-H</td>
+            <td style="padding: 10px;">
+              <a href="https://pan.baidu.com/s/1Di9ffWuzxPZUagBCU4Px2w?pwd=bi9r" target="_blank">Baidu Drive</a> &amp; 
+              <a href="https://huggingface.co/WHU-Sigma/HyperSIGMA/blob/main/spec-vit-huge-ultra-checkpoint-1599.pth" target="_blank">Hugging Face</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+    </div>
+  </div>
+</section> -->
+
+
+<head>
+  <link rel="stylesheet" href="https://cdn.knightlab.com/libs/juxtapose/latest/css/juxtapose.css">
+  <script src="https://cdn.knightlab.com/libs/juxtapose/latest/js/juxtapose.js"></script>
+  <style>
+    /* 控制 Juxtapose 容器的尺寸 */
+    #comparison-slider {
+      width: 30%; /* 宽度调整为父容器的 50% */
+      height: 300px; /* 固定高度为 300px */
+      margin: 0 auto; /* 居中显示 */
+    }
+
+    /* 并排布局容器 */
+    .comparison-container {
+      display: flex; /* 使用 Flexbox 布局 */
+      justify-content: space-around; /* 滑动条之间均匀分布 */
+      gap: 20px; /* 滑动条之间的间距 */
+      margin-top: 20px; /* 顶部留白 */
+    }
+    
+  </style>
+</head>
+
+<section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Pairwise Comparisons of Super-resolution Results</h2>
+
+      <!-- 并排滑动条容器 -->
+      <div class="comparison-container">
+        <!-- 第一个滑动条 -->
+        <div id="comparison-slider">
+          <!-- Juxtapose.js will automatically replace this div -->
+        </div>
+
+        <!-- 第二个滑动条 -->
+        <div id="comparison-slider">
+          <!-- Juxtapose.js will automatically replace this div -->
+        </div>
+      </div>
+
+      <!-- Juxtapose.js Script -->
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          // 初始化第一个滑动条
+          new juxtapose.JXSlider('#comparison-slider:nth-of-type(1)', [
+            {
+              src: 'Fig/sr/bicubicx41.jpg',
+              label: 'Bicubic x4'
+            },
+            {
+              src: 'Fig/sr/oursx41.jpg',
+              label: 'Ours x4'
+            }
+          ], {
+            animate: true,
+            startingPosition: "50%",
+            showLabels: true
+          });
+
+          // 初始化第二个滑动条
+          new juxtapose.JXSlider('#comparison-slider:nth-of-type(2)', [
+            {
+              src: 'Fig/sr/bicubicx42.jpg',
+              label: 'Bicubic x4'
+            },
+            {
+              src: 'Fig/sr/oursx42.jpg',
+              label: 'Ours x4'
+            }
+          ], {
+            animate: true,
+            startingPosition: "50%",
+            showLabels: true
+          });
+        });
+      </script>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<!-- Image carousel -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Real-world Applicability</h2>
+        <!-- Your image here -->
+        <center><img src="Fig\application\oil.png"  alt="MY ALT TEXT" width="1200px" /></center>
+        <h2 class="subtitle has-text-lefted">
+          Visualization of detected oil leakage in various Gulf of Mexico regions by our models: (a) GM07, (b) GM13, (c) GM17, and (d) GM18.
+        </h2>
+    </div>
+  </div>
+</section>
+<!-- End image carousel -->
+
+
+
+<!--BibTex citation -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <pre><code>@ARTICLE{hypersigma,
+          author={Wang, Di and Hu, Meiqi and Jin, Yao and Miao, Yuchun and Yang, Jiaqi and Xu, Yichu and Qin, Xiaolei and Ma, Jiaqi and Sun, Lingyu and Li, Chenxing and Fu, Chuan and Chen, Hongruixuan and Han, Chengxi and Yokoya, Naoto and Zhang, Jing and Xu, Minqiang and Liu, Lin and Zhang, Lefei and Wu, Chen and Du, Bo and Tao, Dacheng and Zhang, Liangpei},
+          journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+          title={HyperSIGMA: Hyperspectral Intelligence Comprehension Foundation Model}, 
+          year={2025},
+          volume={},
+          number={},
+          pages={1-18},
+          doi={10.1109/TPAMI.2025.3557581}
+      }</code></pre>
+    </div>
+</section>
+<!--End BibTex citation -->
+
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <h2 class="title">Contact</h2>
+        <!-- <div class="TEXT"> -->
+          <p>
+            For any other questions please contact:
+          </p>
+          <ul style="list-style-type: disc;">
+            <li>Di Wang at <strong>d_wang@whu.edu.cn</strong></li>
+            <li>Chengxi Han at <strong>chengxihan@whu.edu.cn</strong></li>
+          </ul> 
+        <!-- </div> -->
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+  <footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+
+          <p>
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+            <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <img src="https://visitor-badge.laobi.icu/badge?page_id=WHU-Sigma.HyperSIGMA&left_color=%2363C7E6&right_color=%23CEE75F">
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+
+
+  </body>
+  </html>
