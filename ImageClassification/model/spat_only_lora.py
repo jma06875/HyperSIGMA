@@ -102,7 +102,7 @@ class ACBLoRALinear(nn.Module):
  
     def _reset_lora_parameters(self):
         nn.init.kaiming_uniform_(self.lora_B, a=math.sqrt(5))
-        nn.init.zeros_(self.lora_A)   # 初始化为零，保证训练开始时等价于预训练权重
+        nn.init.kaiming_uniform_(self.lora_A, a=math.sqrt(5))
  
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # 主路径（预训练权重）
@@ -118,6 +118,7 @@ class ACBLoRALinear(nn.Module):
  
             # Step 2: 生成 C (B, r, r)，每个样本独立
             C = self.c_net(cond_feat).view(B_, self.rank, self.rank)
+            C = torch.tanh(C)   # ⭐限制幅度（核心）
  
             # Step 3: 施加 C 调制  (B, N, r)
             xBC = torch.einsum('bnr,brs->bns', xB, C)
@@ -125,6 +126,7 @@ class ACBLoRALinear(nn.Module):
             # Step 4: 投影回输出空间  (B, N, out_features)
             delta = xBC @ self.lora_A
  
+            delta = F.dropout(delta, p=0.2, training=self.training)  # ⭐
             out = out + self.scaling * delta
  
         return out
@@ -262,6 +264,7 @@ class SpatOnlyLoRA(nn.Module):
         self.cls_head = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
+            nn.Dropout(0.3),
             nn.Linear(embed_dim, classes),
         )
  

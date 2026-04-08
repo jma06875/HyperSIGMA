@@ -29,12 +29,12 @@ print("RAM before loading data:", psutil.virtual_memory().percent, "%")
 # ══════════════════════════════════════════════════════════
 IMG_SIZE       = 16      # patch 空间尺寸，必须能被 patch_size 整除
 PATCH_SIZE     = 4       # ViT patch size，序列长度 = (16/4)² = 16
-PCA_COMPONENTS = 30      # 高光谱 PCA 降维
+PCA_COMPONENTS = 40      # 高光谱 PCA 降维
 BATCH_SIZE     = 32
 MAX_EPOCH      = 200
-LR             = 6e-5
-LORA_RANK      = 8
-LORA_ALPHA     = 16.0
+LR             = 2e-4
+LORA_RANK      = 4
+LORA_ALPHA     = 8
 COND_DIM       = 64      # 第二模态压缩维度
 TRAIN_RATIO    = 0.1
 EVAL_INTERVAL  = 10
@@ -135,7 +135,7 @@ class OnTheFlyHSIDataset(Dataset):
     """
     def __init__(self, hs_data, dsm_data, gt, indices,
                  window=16, is_train=False,
-                 aug_noise_hsi=0.01, aug_noise_dsm=0.1):
+                 aug_noise_hsi=0.02, aug_noise_dsm=0.2):
         super().__init__()
         self.hs   = hs_data       # (H, W, C) — 只存引用，不复制
         self.dsm  = dsm_data      # (H, W)
@@ -338,7 +338,7 @@ def get_param_groups(model):
             decay.append(param)
 
     return [
-        {"params": decay, "weight_decay": 1e-4},
+        {"params": decay, "weight_decay": 5e-4},
         {"params": no_decay, "weight_decay": 0.0},
     ]
 
@@ -346,7 +346,7 @@ def get_param_groups(model):
 # ⭐ optimizer
 optimizer = torch.optim.AdamW(
     get_param_groups(model),
-    lr=1e-4
+    lr=LR
 )
 
 
