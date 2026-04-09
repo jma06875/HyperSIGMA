@@ -27,19 +27,21 @@ print("RAM before loading data:", psutil.virtual_memory().percent, "%")
 # ══════════════════════════════════════════════════════════
 # 超参数（集中管理）
 # ══════════════════════════════════════════════════════════
-IMG_SIZE       = 16      # patch 空间尺寸，必须能被 patch_size 整除
+IMG_SIZE       = 8     # patch 空间尺寸，必须能被 patch_size 整除
 PATCH_SIZE     = 4       # ViT patch size，序列长度 = (16/4)² = 16
-PCA_COMPONENTS = 40      # 高光谱 PCA 降维
+PCA_COMPONENTS = 20      # 高光谱 PCA 降维
 BATCH_SIZE     = 32
 MAX_EPOCH      = 200
 LR             = 2e-4
 LORA_RANK      = 4
 LORA_ALPHA     = 8
 COND_DIM       = 64      # 第二模态压缩维度
-TRAIN_RATIO    = 0.1
+TRAIN_RATIO    = 0.05
+VAL_RATIO      = 0.05   
+TEST_RATIO     = 0.90
 EVAL_INTERVAL  = 10
 PATIENCE       = 20
-
+USE_DSM = False
 PATH_WEIGHT = "weights/"
 PATH_RESULT = "result/"
 os.makedirs(PATH_WEIGHT, exist_ok=True)
@@ -73,47 +75,42 @@ def load_data(data_path):
     return data_cube, g_truth, DSM
 
 
-def hybrid_spatial_split(gt, train_ratio=0.1, block_size=20,
-                         min_train_per_class=15, random_seed=42):
+def hybrid_spatial_split(gt, train_ratio=0.1, block_size=80, random_seed=42):
     np.random.seed(random_seed)
     H, W = gt.shape
-    num_classes = int(gt.max())
+
     train_mask = np.zeros_like(gt, dtype=bool)
     test_mask  = np.zeros_like(gt, dtype=bool)
 
-    for cls in range(1, num_classes + 1):
-        ys, xs = np.where(gt == cls)
-        if len(ys) == 0:
-            continue
-        n_train = min(max(min_train_per_class, int(len(ys) * train_ratio)), len(ys))
-        idx = np.random.choice(len(ys), size=n_train, replace=False)
-        train_mask[ys[idx], xs[idx]] = True
+    # ✅ block 划分
+    blocks = [(i, j)
+              for i in range(0, H, block_size)
+              for j in range(0, W, block_size)]
+    np.random.shuffle(blocks)
 
-    unassigned = (gt > 0) & (~train_mask)
-    if unassigned.any():
-        blocks = [(i, j)
-                  for i in range(0, H, block_size)
-                  for j in range(0, W, block_size)]
-        np.random.shuffle(blocks)
-        valid_blocks = []
-        for (i, j) in blocks:
-            ie, je = min(i + block_size, H), min(j + block_size, W)
-            if unassigned[i:ie, j:je].any():
-                valid_blocks.append((i, j, ie, je))
-        n_train_blk = max(1, int(len(valid_blocks) * train_ratio))
-        for k, (i, j, ie, je) in enumerate(valid_blocks):
-            if k < n_train_blk:
-                train_mask[i:ie, j:je] |= unassigned[i:ie, j:je]
-            else:
-                test_mask[i:ie, j:je]  |= unassigned[i:ie, j:je]
+    n_train_blk = int(len(blocks) * train_ratio)
 
+    for k, (i, j) in enumerate(blocks):
+        ie, je = min(i + block_size, H), min(j + block_size, W)
+        if k < n_train_blk:
+            train_mask[i:ie, j:je] = gt[i:ie, j:je] > 0
+        else:
+            test_mask[i:ie, j:je]  = gt[i:ie, j:je] > 0
+
+    # ✅ 防止遗漏
     leftover = (gt > 0) & (~train_mask) & (~test_mask)
     test_mask |= leftover
 
-    nonzero = np.where(gt > 0)
-    train_idx_rel = np.where(train_mask[nonzero])[0].astype(int)
-    test_idx_rel  = np.where(test_mask[nonzero])[0].astype(int)
-    return train_idx_rel, np.array([], dtype=int), test_idx_rel
+    # 🔥 关键：返回“绝对索引”
+    flat_indices = np.where(gt.flatten() > 0)[0]
+
+    train_mask_flat = train_mask.flatten()
+    test_mask_flat  = test_mask.flatten()
+
+    train_index = flat_indices[train_mask_flat[flat_indices]]
+    test_index  = flat_indices[test_mask_flat[flat_indices]]
+
+    return train_index.astype(int), np.array([], dtype=int), test_index.astype(int)
 
 
 # ══════════════════════════════════════════════════════════
@@ -134,7 +131,7 @@ class OnTheFlyHSIDataset(Dataset):
         is_train : 是否做数据增强
     """
     def __init__(self, hs_data, dsm_data, gt, indices,
-                 window=16, is_train=False,
+                 window=16, is_train=False,training=True,
                  aug_noise_hsi=0.02, aug_noise_dsm=0.2):
         super().__init__()
         self.hs   = hs_data       # (H, W, C) — 只存引用，不复制
@@ -146,16 +143,16 @@ class OnTheFlyHSIDataset(Dataset):
         self.is_train  = is_train
         self.noise_hsi = aug_noise_hsi
         self.noise_dsm = aug_noise_dsm
-
+        self.training = training
         H, W, C = hs_data.shape
         # 预先 pad，pad 后的数组仍共享内存基础数据
         # pad = window//2，切片 [ip : ip+window] 恰好是 window 个像素
         self.hs_pad  = np.pad(hs_data,
                               ((self.pad, self.pad), (self.pad, self.pad), (0, 0)),
-                              mode='symmetric')
+                              mode='constant', constant_values=0)
         self.dsm_pad = np.pad(dsm_data,
                               ((self.pad, self.pad), (self.pad, self.pad)),
-                              mode='symmetric')
+                              mode='constant', constant_values=0)
         self.H, self.W = H, W
         # pad 大小：确保切出来恰好是 window × window
         # 切法：padded[ip : ip+window, jp : jp+window]
@@ -176,16 +173,25 @@ class OnTheFlyHSIDataset(Dataset):
         half = self.window // 2
 
         hs_patch = self.hs_pad[
-            ip - half : ip + half,
-            jp - half : jp + half,
+            ip - half : ip - half + self.window,
+            jp - half : jp - half + self.window,
         :
         ]
 
-        dsm_patch = self.dsm_pad[
-            ip - half : ip + half,
-            jp - half : jp + half
-        ]
 
+        if self.training:
+            noise = np.random.normal(0, 0.01, hs_patch.shape)
+            hs_patch = hs_patch + noise
+
+
+
+        dsm_patch = self.dsm_pad[
+            ip - half : ip - half + self.window,
+            jp - half : jp - half + self.window
+        ]
+        dsm_patch = (dsm_patch - dsm_patch.mean()) / (dsm_patch.std() + 1e-6)
+
+        
         hs_t = torch.from_numpy(
             np.ascontiguousarray(hs_patch.transpose(2, 0, 1))
         ).float()
@@ -225,31 +231,71 @@ gt_flat = g_truth.reshape(-1)
 nonzero_indices = np.where(gt_flat > 0)[0]
 nonzero_labels  = gt_flat[nonzero_indices]
 
-train_idx_rel, val_idx_rel, test_idx_rel = hybrid_spatial_split(
-    g_truth, train_ratio=TRAIN_RATIO, block_size=20, min_train_per_class=15)
+gt_flat = g_truth.reshape(-1)
+indices = np.where(gt_flat > 0)[0]
 
-train_index = nonzero_indices[train_idx_rel].astype(int)
-test_index  = nonzero_indices[test_idx_rel].astype(int)
-val_index   = nonzero_indices[val_idx_rel].astype(int) if len(val_idx_rel) > 0 else np.array([], dtype=int)
+train_index, val_index, test_index = hybrid_spatial_split(
+    g_truth,
+    train_ratio=0.6,
+    block_size=80
+)
+
+# ================== 🔥 加在这里（唯一必须修改） ==================
+
+pad = IMG_SIZE // 2   # 和 Dataset 保持一致
+H, W = g_truth.shape
+
+coords = np.array(np.where(g_truth > 0)).T  # (N,2)
+
+def filter_safe(indices):
+    selected_coords = coords[np.isin(np.where(g_truth.flatten() > 0)[0], indices)]
+
+    mask = (
+        (selected_coords[:, 0] >= pad) &
+        (selected_coords[:, 0] < H - pad) &
+        (selected_coords[:, 1] >= pad) &
+        (selected_coords[:, 1] < W - pad)
+    )
+
+    return indices[mask]
+
+train_index = filter_safe(train_index)
+test_index  = filter_safe(test_index)
+
+# ===============================================================
+
+np.random.seed(42)
+np.random.shuffle(test_index)
+
+n_val = int(len(test_index) * 0.2)
+
+val_index  = test_index[:n_val]
+test_index = test_index[n_val:]
 
 train_label = g_truth.flat[train_index].astype(int) - 1
 test_label  = g_truth.flat[test_index].astype(int)  - 1
-
+val_label = g_truth.flat[val_index].astype(int) - 1
 print(f"train={len(train_index)}, val={len(val_index)}, test={len(test_index)}")
 assert np.min(train_label) >= 0 and np.max(train_label) < num_classes
 assert np.min(test_label)  >= 0 and np.max(test_label)  < num_classes
 
 # --- Dataset & DataLoader ---
 train_dataset = OnTheFlyHSIDataset(
-    data_pca, dsm_norm, g_truth, train_index,
+    data_pca, dsm_norm, g_truth, train_index,training=True,
     window=IMG_SIZE, is_train=True)
 
+val_dataset = OnTheFlyHSIDataset(
+    data_pca, dsm_norm, g_truth, val_index,training=False,
+    window=IMG_SIZE, is_train=False)
+
 test_dataset = OnTheFlyHSIDataset(
-    data_pca, dsm_norm, g_truth, test_index,
+    data_pca, dsm_norm, g_truth, test_index,training=False,
     window=IMG_SIZE, is_train=False)
 
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE,
-                          shuffle=True,  num_workers=4, pin_memory=True)
+                          shuffle=True,  num_workers=4, pin_memory=True,)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE,
+                        shuffle=False, num_workers=4, pin_memory=True)
 test_loader  = DataLoader(test_dataset,  batch_size=BATCH_SIZE,
                           shuffle=False, num_workers=4, pin_memory=True)
 
@@ -274,7 +320,7 @@ model = SpatOnlyLoRA(
 script_dir = os.path.dirname(os.path.abspath(__file__))
 ckpt_path  = os.path.join(script_dir, "spat-base.pth")
 
-if os.path.isfile(ckpt_path):
+if False:
     print(f"Loading pretrained weights from {ckpt_path}")
     ckpt = torch.load(ckpt_path, map_location='cpu')
     pretrained = ckpt.get('model', ckpt)
@@ -307,9 +353,14 @@ model = model.to(device)
 for p in model.parameters():
     p.requires_grad = False
 for name, p in model.named_parameters():
-    if any(k in name for k in ['lora_A', 'lora_B', 'c_net',
+    if USE_DSM:
+        if any(k in name for k in ['lora_A', 'lora_B', 'c_net',
                                 'mod2_encoder', 'cls_head']):
-        p.requires_grad = True
+            p.requires_grad = True
+    else:
+        if any(k in name for k in ['lora_A', 'lora_B', 'cls_head']):
+            p.requires_grad = True
+        
 
 trainable = [(n, p.shape) for n, p in model.named_parameters() if p.requires_grad]
 print(f"Trainable params: {len(trainable)}")
@@ -363,9 +414,7 @@ classes_arr   = np.unique(train_label)
 class_weights = compute_class_weight('balanced', classes=classes_arr, y=train_label)
 class_weights = np.clip(class_weights, 0.5, 5.0)
 
-criterion = nn.CrossEntropyLoss(
-    weight=torch.FloatTensor(class_weights).to(device)
-)
+criterion = nn.CrossEntropyLoss()
 # ══════════════════════════════════════════════════════════
 # 6. 训练循环
 # ══════════════════════════════════════════════════════════
@@ -381,7 +430,10 @@ for epoch in range(MAX_EPOCH):
         hsi, dsm, labels = hsi.to(device), dsm.to(device), labels.to(device)
 
         optimizer.zero_grad()
-        outputs = model(hsi, dsm)          # forward(hsi, mod2)
+        if USE_DSM:
+            outputs = model(hsi, dsm)
+        else:
+            outputs = model(hsi, None)          # forward(hsi, mod2)
         loss = criterion(outputs, labels)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(
@@ -402,9 +454,15 @@ for epoch in range(MAX_EPOCH):
         model.eval()
         all_preds, all_labels = [], []
         with torch.no_grad():
-            for hsi, dsm, lab in test_loader:
-                hsi, dsm = hsi.to(device), dsm.to(device)
-                pred = model(hsi, dsm).argmax(1).cpu()
+            for hsi, dsm, lab in val_loader:
+                hsi = hsi.to(device)
+                dsm = dsm.to(device)
+
+                if USE_DSM:
+                    pred = model(hsi, dsm).argmax(1).cpu()
+                else:
+                    pred = model(hsi, None).argmax(1).cpu()
+
                 all_preds.append(pred)
                 all_labels.append(lab)
 
@@ -434,8 +492,14 @@ model.eval()
 all_preds, all_labels = [], []
 with torch.no_grad():
     for hsi, dsm, lab in test_loader:
-        hsi, dsm = hsi.to(device), dsm.to(device)
-        pred = model(hsi, dsm).argmax(1).cpu().numpy()
+        hsi = hsi.to(device)
+        dsm = dsm.to(device)
+
+        if USE_DSM:
+            pred = model(hsi, dsm).argmax(1).cpu().numpy()
+        else:
+            pred = model(hsi, None).argmax(1).cpu().numpy()
+
         all_preds.append(pred)
         all_labels.append(lab.numpy())
 

@@ -110,24 +110,30 @@ class ACBLoRALinear(nn.Module):
  
         # ACB 旁路（只在 _cond_feat 已注册时激活）
         cond_feat = getattr(self, '_cond_feat', None)
+
+        B_, N, D = x.shape
+
+        # Step 1: x → 低秩空间
+        xB = x @ self.lora_B   # (B, N, r)
+
         if cond_feat is not None:
-            B_, N, D = x.shape
- 
-            # Step 1: x → 低秩空间  (B, N, r)
-            xB = x @ self.lora_B
- 
-            # Step 2: 生成 C (B, r, r)，每个样本独立
+            # ===== 双模态：ACB =====
             C = self.c_net(cond_feat).view(B_, self.rank, self.rank)
-            C = torch.tanh(C)   # ⭐限制幅度（核心）
- 
-            # Step 3: 施加 C 调制  (B, N, r)
+            C = torch.tanh(C)
+
             xBC = torch.einsum('bnr,brs->bns', xB, C)
- 
-            # Step 4: 投影回输出空间  (B, N, out_features)
-            delta = xBC @ self.lora_A
- 
-            delta = F.dropout(delta, p=0.2, training=self.training)  # ⭐
-            out = out + self.scaling * delta
+
+        else:
+            # ===== 单模态：标准 LoRA（关键！！！）=====
+            xBC = xB
+
+        # Step 3: 回投
+        delta = xBC @ self.lora_A
+
+        # Dropout 保留（单模态也能用）
+        delta = F.dropout(delta, p=0.2, training=self.training)
+
+        out = out + self.scaling * delta
  
         return out
  
