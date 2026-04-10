@@ -38,7 +38,7 @@ class Mod2Encoder(nn.Module):
         super().__init__()
         mid = max(cond_dim, 32)
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, mid, kernel_size=3, padding=1, bias=False),
+            nn.Conv2d(in_channels, mid, kernel_size=5, padding=2, bias=False),
             nn.BatchNorm2d(mid),
             nn.GELU(),
             nn.Conv2d(mid, cond_dim, kernel_size=3, padding=1, bias=False),
@@ -221,7 +221,10 @@ class SpatOnlyLoRA(nn.Module):
         self.img_size  = img_size
         self.classes   = classes
         self.cond_dim  = cond_dim
- 
+        self.dsm_gate = nn.Sequential(
+            nn.Linear(self.cond_dim, 768),
+            nn.Sigmoid()
+        )
         if model_size == 'base':
             embed_dim = 768
             depth     = 12
@@ -321,7 +324,11 @@ class SpatOnlyLoRA(nn.Module):
         # 最后一个元素对应最深层 out_index=11
         features = self.encoder.forward_features(x, self.encoder.patch_size)
         feat_map = features[-1]   # (B, embed_dim, Hp, Wp)
- 
+        if cond_feat is not None:
+            gate = self.dsm_gate(cond_feat)        # (B, 768)
+            gate = gate.unsqueeze(-1).unsqueeze(-1)  # (B, 768, 1, 1)
+
+            feat_map = feat_map * (1 + gate)
         # Step 4: 分类头
         logits = self.cls_head(feat_map)   # (B, classes)
  

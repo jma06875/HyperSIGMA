@@ -31,17 +31,17 @@ IMG_SIZE       = 8     # patch 空间尺寸，必须能被 patch_size 整除
 PATCH_SIZE     = 4       # ViT patch size，序列长度 = (16/4)² = 16
 PCA_COMPONENTS = 20      # 高光谱 PCA 降维
 BATCH_SIZE     = 32
-MAX_EPOCH      = 200
+MAX_EPOCH      = 100
 LR             = 2e-4
-LORA_RANK      = 4
-LORA_ALPHA     = 8
+LORA_RANK      = 8
+LORA_ALPHA     = 16
 COND_DIM       = 64      # 第二模态压缩维度
 TRAIN_RATIO    = 0.05
 VAL_RATIO      = 0.05   
 TEST_RATIO     = 0.90
 EVAL_INTERVAL  = 10
-PATIENCE       = 20
-USE_DSM = False
+PATIENCE       = 10
+USE_DSM = True
 PATH_WEIGHT = "weights/"
 PATH_RESULT = "result/"
 os.makedirs(PATH_WEIGHT, exist_ok=True)
@@ -147,12 +147,17 @@ class OnTheFlyHSIDataset(Dataset):
         H, W, C = hs_data.shape
         # 预先 pad，pad 后的数组仍共享内存基础数据
         # pad = window//2，切片 [ip : ip+window] 恰好是 window 个像素
-        self.hs_pad  = np.pad(hs_data,
-                              ((self.pad, self.pad), (self.pad, self.pad), (0, 0)),
-                              mode='constant', constant_values=0)
-        self.dsm_pad = np.pad(dsm_data,
-                              ((self.pad, self.pad), (self.pad, self.pad)),
-                              mode='constant', constant_values=0)
+        self.hs_pad  = np.pad(
+            hs_data,
+            ((self.pad, self.pad), (self.pad, self.pad), (0, 0)),
+            mode='reflect'
+        ) 
+
+        self.dsm_pad = np.pad(
+            dsm_data,
+            ((self.pad, self.pad), (self.pad, self.pad)),
+            mode='reflect'
+        )
         self.H, self.W = H, W
         # pad 大小：确保切出来恰好是 window × window
         # 切法：padded[ip : ip+window, jp : jp+window]
@@ -189,6 +194,9 @@ class OnTheFlyHSIDataset(Dataset):
             ip - half : ip - half + self.window,
             jp - half : jp - half + self.window
         ]
+
+        if not USE_DSM:
+            dsm_patch = np.zeros_like(dsm_patch)
         dsm_patch = (dsm_patch - dsm_patch.mean()) / (dsm_patch.std() + 1e-6)
 
         
@@ -205,7 +213,7 @@ class OnTheFlyHSIDataset(Dataset):
 
         if self.is_train:
             hs_t  = hs_t  + torch.randn_like(hs_t)  * self.noise_hsi
-            dsm_t = dsm_t + torch.randn_like(dsm_t) * self.noise_dsm
+            dsm_t = dsm_t + torch.randn_like(dsm_t) * 0.05
 
         return hs_t, dsm_t, label_t
 
@@ -234,11 +242,31 @@ nonzero_labels  = gt_flat[nonzero_indices]
 gt_flat = g_truth.reshape(-1)
 indices = np.where(gt_flat > 0)[0]
 
-train_index, val_index, test_index = hybrid_spatial_split(
-    g_truth,
-    train_ratio=0.6,
-    block_size=80
+
+from sklearn.model_selection import train_test_split
+
+gt_flat = g_truth.reshape(-1)
+indices = np.where(gt_flat > 0)[0]
+labels  = gt_flat[indices]
+
+train_index, test_index = train_test_split(
+    indices,
+    train_size=TRAIN_RATIO,
+    stratify=labels,   # 🔥 关键：保证每个类都有
+    random_state=42
 )
+
+# ===== 从 train 划 val =====
+val_portion = 0.2
+num_train = len(train_index)
+
+np.random.seed(42)
+perm = np.random.permutation(num_train)
+
+val_size = int(num_train * val_portion)
+
+val_index = train_index[perm[:val_size]]
+train_index = train_index[perm[val_size:]]
 
 # ================== 🔥 加在这里（唯一必须修改） ==================
 
@@ -259,18 +287,9 @@ def filter_safe(indices):
 
     return indices[mask]
 
-train_index = filter_safe(train_index)
-test_index  = filter_safe(test_index)
 
 # ===============================================================
 
-np.random.seed(42)
-np.random.shuffle(test_index)
-
-n_val = int(len(test_index) * 0.2)
-
-val_index  = test_index[:n_val]
-test_index = test_index[n_val:]
 
 train_label = g_truth.flat[train_index].astype(int) - 1
 test_label  = g_truth.flat[test_index].astype(int)  - 1
@@ -410,11 +429,26 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
 
 
 # ⭐ class weight
-classes_arr   = np.unique(train_label)
-class_weights = compute_class_weight('balanced', classes=classes_arr, y=train_label)
-class_weights = np.clip(class_weights, 0.5, 5.0)
+# ===== FIX START =====
 
-criterion = nn.CrossEntropyLoss()
+unique_classes = np.unique(train_label)
+
+class_weights = np.ones(num_classes, dtype=np.float32)
+
+if len(unique_classes) > 0:
+    weights_partial = compute_class_weight(
+        class_weight='balanced',
+        classes=unique_classes,
+        y=train_label
+    )
+    class_weights[unique_classes] = weights_partial
+
+class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
+
+print("train_label unique:", np.unique(train_label))
+# ===== FIX END =====
+
+criterion = nn.CrossEntropyLoss(weight=class_weights)
 # ══════════════════════════════════════════════════════════
 # 6. 训练循环
 # ══════════════════════════════════════════════════════════
